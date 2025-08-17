@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("USER")
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]
+  reviews       Review[]
+  licenses      License[]
+  downloads     Download[]
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Product {
+  id               String      @id @default(cuid())
+  name             String
+  description      String
+  shortDescription String?
+  price            Float
+  originalPrice    Float?
+  images           String      // Stored as JSON string for SQLite compatibility
+  features         String?     // Stored as JSON string for SQLite compatibility
+  systemRequirements String?   // Stored as JSON string for SQLite compatibility
+  downloadUrl      String?
+  fileSize         String?
+  version          String?
+  isActive         Boolean     @default(true)
+  isFeatured       Boolean     @default(false)
+  stockCount       Int?        @default(0)
+  downloadLimit    Int?        @default(5)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  category         Category    @relation(fields: [categoryName], references: [name])
+  categoryName     String
+  orderItems       OrderItem[]
+  reviews          Review[]
+  licenses         License[]
+  downloads        Download[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  userId         String
+  amount         Float
+  tax            Float?      @default(0)
+  total          Float
+  status         String      @default("PENDING")
+  paymentIntentId String?    @unique
+  paymentStatus  String?
+  couponCode     String?
+  couponDiscount Float?     @default(0)
+  billingEmail   String?
+  billingName    String?
+  billingAddress String?    // JSON string for address details
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  user           User       @relation(fields: [userId], references: [id])
+  items          OrderItem[]
+  licenses       License[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model License {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  userId       String
+  productId    String
+  orderId      String?
+  isActive     Boolean  @default(true)
+  activatedAt  DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+  product      Product  @relation(fields: [productId], references: [id])
+  order        Order?   @relation(fields: [orderId], references: [id])
+}
+
+model Download {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  licenseId   String?
+  downloadUrl String?
+  expiresAt   DateTime?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model Coupon {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  discount    Float
+  expiresAt   DateTime
+  isActive    Boolean  @default(true)
+}

@@ -95,7 +95,7 @@ src/
 
 #### 4. User Account System
 - **Registration/Login**: Email/password with email verification
-- **Social Login**: Google, GitHub, Microsoft OAuth
+- **Social Login**: Google, Facebook, Microsoft OAuth
 - **Profile Management**: Personal information, password changes
 - **Purchase History**: Complete order history with status tracking
 - **Wishlist**: Save products for later purchase
